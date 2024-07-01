@@ -1,8 +1,7 @@
-require('colors');
-const crypto = require('crypto');
-
-const speech = require('@google-cloud/speech');
-const EventEmitter = require('events');
+import 'colors';
+import crypto from 'crypto';
+import speech from '@google-cloud/speech';
+import { EventEmitter } from 'events';
 
 function textId(input) {
   return crypto.createHash('sha256').update(input).digest('hex');
@@ -85,4 +84,4 @@ class TranscriptionService extends EventEmitter {
   }
 }
 
-module.exports = { TranscriptionService };
+export { TranscriptionService };

@@ -1,5 +1,5 @@
 
-require('colors');
+import 'colors';
 
 async function recordingService(ttsService, callSid) {
   try {
@@ -20,4 +20,4 @@ async function recordingService(ttsService, callSid) {
   }
 }
 
-module.exports = { recordingService };
+export { recordingService };

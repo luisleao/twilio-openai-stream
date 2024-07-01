@@ -1,21 +1,40 @@
-require('dotenv').config();
-require('colors');
+import 'dotenv/config';
+import 'colors';
 
-const express = require('express');
-const ExpressWs = require('express-ws');
+import express from 'express';
+import ExpressWs from 'express-ws';
+import { loadData, searchQuery } from './vectorDb.js';
+import { GptService } from './services/gpt-service.js';
+import { StreamService } from './services/stream-service.js';
+import { TranscriptionService } from './services/transcription-service.js';
+import { TextToSpeechService } from './services/tts-service.js';
+import { recordingService } from './services/recording-service.js';
+import twilio from 'twilio';
+const VoiceResponse = twilio.twiml.VoiceResponse;
 
-const { GptService } = require('./services/gpt-service');
-const { StreamService } = require('./services/stream-service');
-const { TranscriptionService } = require('./services/transcription-service');
-const { TextToSpeechService } = require('./services/tts-service');
-const { recordingService } = require('./services/recording-service');
-
-const VoiceResponse = require('twilio').twiml.VoiceResponse;
-
+// Inicializa o servidor Express
 const app = express();
 ExpressWs(app);
 
 const PORT = process.env.PORT || 3000;
+
+app.get('/query', async (req, res) => {
+  const query = req.query.q;
+  if (!query) {
+    return res.status(400).send('Query parameter "q" is required.');
+  }
+
+  try {
+    const results = await searchQuery(query, 1);
+    if (results.length === 0) {
+      return res.status(404).send('No matching results found.');
+    }
+    res.json(results[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('An error occurred while processing the query.');
+  }
+});
 
 app.post('/incoming', (req, res) => {
   try {
@@ -55,8 +74,8 @@ app.ws('/connection', (ws) => {
         gptService.createThread();
 
         //Primeira mensagem
-        ttsService.generate({partialResponse: 'Oi, aqui é a Lex, <break time="0.5s"/>a primeira inteligencia artificial legislativa.', partialOrder:0, id:'firstmessage'});
         transcriptionService.startSTT();
+        ttsService.generate({partialResponse: 'Oi, eu sou Lex, a primeira inteligencia artificial legislativa do mundo. Como posso te ajudar?', partialOrder:0, id:'firstmessage'});
 
       } else if (msg.event === 'media') {
         if (transcriptionService.recognizeStream.destroyed) return;
@@ -110,5 +129,11 @@ app.ws('/connection', (ws) => {
   }
 });
 
-app.listen(PORT);
-console.log(`Server running on port ${PORT}`);
+// Carrega os dados e inicia o servidor
+loadData().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}).catch(err => {
+  console.error('Failed to load data:', err);
+});

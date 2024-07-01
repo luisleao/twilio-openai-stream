@@ -1,7 +1,6 @@
-require('dotenv').config();
-const { Buffer } = require('node:buffer');
-const EventEmitter = require('events');
-
+import 'dotenv/config';
+import { Buffer } from 'node:buffer';
+import { EventEmitter } from 'events';
 
 class TextToSpeechService extends EventEmitter {
   constructor() {
@@ -46,4 +45,4 @@ class TextToSpeechService extends EventEmitter {
   }
 }
 
-module.exports = { TextToSpeechService };
+export { TextToSpeechService };

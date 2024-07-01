@@ -1,5 +1,5 @@
-const EventEmitter = require('events');
-const uuid = require('uuid');
+import { EventEmitter } from 'events';
+import { v4 as uuidv4 } from 'uuid';
 
 class StreamService extends EventEmitter {
   constructor(websocket) {
@@ -32,7 +32,6 @@ class StreamService extends EventEmitter {
   }
 
   playNextAudio(id) {
-    console.log(this.audioBuffer);
     const collection = this.audioBuffer[id];
 
     // Verifica se o áudio esperado está disponível no buffer
@@ -56,7 +55,7 @@ class StreamService extends EventEmitter {
     );
 
     // When the media completes you will receive a `mark` message with the label
-    const markLabel = uuid.v4();
+    const markLabel = uuidv4();
     this.ws.send(
       JSON.stringify({
         streamSid: this.streamSid,
@@ -70,4 +69,4 @@ class StreamService extends EventEmitter {
   }
 }
 
-module.exports = { StreamService };
+export { StreamService };

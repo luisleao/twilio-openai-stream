@@ -42,7 +42,7 @@ Copy `.env.example` to `.env` and configure the following environment variables:
 SERVER="yourserverdomain.com"
 
 # Service API Keys
-OPENAI_API_KEY="sk-XXXXXX"
+OPENAI_API_KEY="XXXXXX"
 DEEPGRAM_API_KEY="YOUR-DEEPGRAM-API-KEY"
 
 # Configure your Twilio credentials if you want

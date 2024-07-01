@@ -34,24 +34,8 @@ ngrok http 3000
 Ngrok will give you a unique URL, like `abc123.ngrok.io`. Copy the URL without http:// or https://. You'll need this URL in the next step.
 
 ### 2. Configure Environment Variables
-Copy `.env.example` to `.env` and configure the following environment variables:
+Copy `.env.example` to `.env` and configure the env variables.
 
-```bash
-# Your ngrok or server URL
-# E.g. 123.ngrok.io or myserver.fly.dev (exlude https://)
-SERVER="yourserverdomain.com"
-
-# Service API Keys
-OPENAI_API_KEY="XXXXXX"
-DEEPGRAM_API_KEY="YOUR-DEEPGRAM-API-KEY"
-
-# Configure your Twilio credentials if you want
-# to make test calls using '$ npm test'.
-TWILIO_ACCOUNT_SID="YOUR-ACCOUNT-SID"
-TWILIO_AUTH_TOKEN="YOUR-AUTH-TOKEN"
-FROM_NUMBER='+12223334444'
-TO_NUMBER='+13334445555'
-```
 
 ### 3. Install Dependencies with NPM
 Install the necessary packages:

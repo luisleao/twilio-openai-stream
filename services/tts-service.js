@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Buffer } = require('node:buffer');
 const EventEmitter = require('events');
-const fetch = require('node-fetch');
+
 
 class TextToSpeechService extends EventEmitter {
   constructor() {
@@ -10,41 +10,37 @@ class TextToSpeechService extends EventEmitter {
     this.speechBuffer = {};
   }
 
-  async generate(gptReply, interactionCount) {
-    const { partialResponseIndex, partialResponse } = gptReply;
+  async generate(message) {
+    const { partialResponse } = message;
 
     if (!partialResponse) { return; }
 
     try {
       const response = await fetch(
-        `https://api.deepgram.com/v1/speak?model=${process.env.VOICE_MODEL}&encoding=mulaw&sample_rate=8000&container=none`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${process.env.ELEVENLABS_VOICE_ID}/stream?output_format=ulaw_8000&optimize_streaming_latency=3`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`,
+            'xi-api-key': process.env.ELEVENLABS_API_KEY,
             'Content-Type': 'application/json',
+            accept: 'audio/wav',
           },
           body: JSON.stringify({
+            model_id: process.env.ELEVENLABS_MODEL_ID,
             text: partialResponse,
           }),
         }
       );
-
+      
       if (response.status === 200) {
-        try {
-          const blob = await response.blob();
-          const audioArrayBuffer = await blob.arrayBuffer();
-          const base64String = Buffer.from(audioArrayBuffer).toString('base64');
-          this.emit('speech', partialResponseIndex, base64String, partialResponse, interactionCount);
-        } catch (err) {
-          console.log(err);
-        }
+        const audioArrayBuffer = await response.arrayBuffer();
+        this.emit('speech', Buffer.from(audioArrayBuffer).toString('base64'), message);
       } else {
-        console.log('Deepgram TTS error:');
+        console.log('Eleven Labs Error:');
         console.log(response);
       }
     } catch (err) {
-      console.error('Error occurred in TextToSpeech service');
+      console.error('Error occurred in XI LabsTextToSpeech service');
       console.error(err);
     }
   }

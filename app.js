@@ -43,7 +43,6 @@ app.ws('/connection', (ws) => {
     const ttsService = new TextToSpeechService({});
   
     let marks = [];
-    let interactionCount = 0;
   
     // Incoming from MediaStream
     ws.on('message', function message(data) {
@@ -53,20 +52,22 @@ app.ws('/connection', (ws) => {
         callSid = msg.start.callSid;
         
         streamService.setStreamSid(streamSid);
-        gptService.setCallSid(callSid);
+        gptService.createThread();
 
-        // Set RECORDING_ENABLED='true' in .env to record calls
-        recordingService(ttsService, callSid).then(() => {
-          console.log(`Twilio -> Starting Media Stream for ${streamSid}`.underline.red);
-          ttsService.generate({partialResponseIndex: null, partialResponse: 'Hello! I understand you\'re looking for a pair of AirPods, is that correct?'}, 0);
-        });
+        //Primeira mensagem
+        ttsService.generate({partialResponse: 'Oi, aqui é a Lex, <break time="0.5s"/>a primeira inteligencia artificial legislativa.', partialOrder:0, id:'firstmessage'});
+        transcriptionService.startSTT();
+
       } else if (msg.event === 'media') {
+        if (transcriptionService.recognizeStream.destroyed) return;
+
         transcriptionService.send(msg.media.payload);
       } else if (msg.event === 'mark') {
         const label = msg.mark.name;
         console.log(`Twilio -> Audio completed mark (${msg.sequenceNumber}): ${label}`.red);
         marks = marks.filter(m => m !== msg.mark.name);
       } else if (msg.event === 'stop') {
+        transcriptionService.recognizeStream.destroy();
         console.log(`Twilio -> Media stream ${streamSid} ended.`.underline.red);
       }
     });
@@ -84,22 +85,21 @@ app.ws('/connection', (ws) => {
       }
     });
   
-    transcriptionService.on('transcription', async (text) => {
-      if (!text) { return; }
-      console.log(`Interaction ${interactionCount} – STT -> GPT: ${text}`.yellow);
-      gptService.completion(text, interactionCount);
-      interactionCount += 1;
+    transcriptionService.on('transcription', async (message) => {
+      if (!message.text) { return; }
+      console.log(`Interaction – STT -> GPT: ${message.text}`.yellow);
+      gptService.completion(message);
     });
     
-    gptService.on('gptreply', async (gptReply, icount) => {
-      console.log(`Interaction ${icount}: GPT -> TTS: ${gptReply.partialResponse}`.green );
-      ttsService.generate(gptReply, icount);
+    gptService.on('gptreply', async (message) => {
+      console.log(`Interaction: GPT -> TTS: ${message.partialResponse}`.green );
+      ttsService.generate(message);
     });
   
-    ttsService.on('speech', (responseIndex, audio, label, icount) => {
-      console.log(`Interaction ${icount}: TTS -> TWILIO: ${label}`.blue);
+    ttsService.on('speech', (audio, message) => {
+      console.log(`TTS -> TWILIO: ${message.partialResponse}`.blue);
   
-      streamService.buffer(responseIndex, audio);
+      streamService.buffer(audio, message);
     });
   
     streamService.on('audiosent', (markLabel) => {

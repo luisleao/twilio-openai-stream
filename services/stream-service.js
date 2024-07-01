@@ -5,34 +5,46 @@ class StreamService extends EventEmitter {
   constructor(websocket) {
     super();
     this.ws = websocket;
-    this.expectedAudioIndex = 0;
     this.audioBuffer = {};
     this.streamSid = '';
   }
 
-  setStreamSid (streamSid) {
+  setStreamSid(streamSid) {
     this.streamSid = streamSid;
   }
 
-  buffer (index, audio) {
-    // Escape hatch for intro message, which doesn't have an index
-    if(index === null) {
-      this.sendAudio(audio);
-    } else if(index === this.expectedAudioIndex) {
-      this.sendAudio(audio);
-      this.expectedAudioIndex++;
+  buffer(audio, message) {
+    const { id, partialOrder } = message;
 
-      while(Object.prototype.hasOwnProperty.call(this.audioBuffer, this.expectedAudioIndex)) {
-        const bufferedAudio = this.audioBuffer[this.expectedAudioIndex];
-        this.sendAudio(bufferedAudio);
-        this.expectedAudioIndex++;
-      }
-    } else {
-      this.audioBuffer[index] = audio;
+    // Inicializa o buffer para o id se ainda não existir
+    if (!this.audioBuffer[id]) {
+      this.audioBuffer[id] = {
+        buffer: {},
+        expectedAudioIndex: 0
+      };
+    }
+
+    // Armazena o áudio no buffer
+    this.audioBuffer[id].buffer[partialOrder] = audio;
+
+    // Tenta tocar o próximo áudio na ordem
+    this.playNextAudio(id);
+  }
+
+  playNextAudio(id) {
+    console.log(this.audioBuffer);
+    const collection = this.audioBuffer[id];
+
+    // Verifica se o áudio esperado está disponível no buffer
+    while (collection.buffer[collection.expectedAudioIndex]) {
+      const audio = collection.buffer[collection.expectedAudioIndex];
+      this.sendAudio(audio);
+      delete collection.buffer[collection.expectedAudioIndex];
+      collection.expectedAudioIndex++;
     }
   }
 
-  sendAudio (audio) {
+  sendAudio(audio) {
     this.ws.send(
       JSON.stringify({
         streamSid: this.streamSid,
@@ -42,6 +54,7 @@ class StreamService extends EventEmitter {
         },
       })
     );
+
     // When the media completes you will receive a `mark` message with the label
     const markLabel = uuid.v4();
     this.ws.send(
@@ -57,4 +70,4 @@ class StreamService extends EventEmitter {
   }
 }
 
-module.exports = {StreamService};
+module.exports = { StreamService };

@@ -3,7 +3,6 @@ import 'colors';
 
 import express from 'express';
 import ExpressWs from 'express-ws';
-import { loadData, searchQuery } from './vectorDb.js';
 import { GptService } from './services/gpt-service.js';
 import { StreamService } from './services/stream-service.js';
 import { TranscriptionService } from './services/transcription-service.js';
@@ -18,29 +17,19 @@ ExpressWs(app);
 
 const PORT = process.env.PORT || 3000;
 
-app.get('/query', async (req, res) => {
-  const query = req.query.q;
-  if (!query) {
-    return res.status(400).send('Query parameter "q" is required.');
-  }
-
-  try {
-    const results = await searchQuery(query, 1);
-    if (results.length === 0) {
-      return res.status(404).send('No matching results found.');
-    }
-    res.json(results[0]);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('An error occurred while processing the query.');
-  }
+app.get('/', (req, res) => {
+  
+  res.type('text/plain');
+  res.end("OK");
+ 
 });
 
-app.post('/incoming', (req, res) => {
+app.all('/incoming', (req, res) => {
+  console.log(req.rawHeaders[1]);
   try {
     const response = new VoiceResponse();
     const connect = response.connect();
-    connect.stream({ url: `wss://${process.env.SERVER}/connection` });
+    connect.stream({ url: `wss://${req.rawHeaders[1]}/connection` });
   
     res.type('text/xml');
     res.end(response.toString());
@@ -130,10 +119,6 @@ app.ws('/connection', (ws) => {
 });
 
 // Carrega os dados e inicia o servidor
-loadData().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-  });
-}).catch(err => {
-  console.error('Failed to load data:', err);
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });

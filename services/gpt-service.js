@@ -1,7 +1,6 @@
 import 'colors';
 import { EventEmitter } from 'events';
 import OpenAI from 'openai';
-import { searchQuery } from '../vectorDb.js';
 
 class GptService extends EventEmitter {
   constructor() {
@@ -34,21 +33,6 @@ class GptService extends EventEmitter {
       content: message.text
     });
 
-    const results = await searchQuery(message.text, 1);
-      if (results.length > 0) {
-        const context = `
-        Essa são informações de contexto.
-        Pergunta: "${results[0].object.question}".
-        Resposta sugerida: "${results[0].object.answer}".
-        Elabore a resposta com base nessas informações.`;
-        console.log(context);
-
-        await this.openai.beta.threads.messages.create(this.threadId, {
-          role: "assistant",
-          content: context
-        });
-      }
-    
     let buffer = '';
     let textOrder = 0;
     const run = await this.openai.beta.threads.runs
